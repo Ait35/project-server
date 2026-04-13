@@ -49,9 +49,10 @@ import { db } from '../db_connect/db_sql';
 
 export const signin = async (req: Request, res: Response) => {
   try {
-    const {username, email , passwd,name , last, birthdate, Role, available, phone} = req.body;
-    if( !username || !email || !passwd ||!name ||!last || !birthdate || !Role || !phone) {
-      return res.status(400).json({ error: 'Error in signin try again' });
+    const {username, email , password ,name , last, birthdate, Role, available, phone} = req.body;
+
+    if (!username || !email || !password || !name || !last || !birthdate || !phone) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
     //เช็ค mail username phone 
     if (await checkdata('email', email)) {
@@ -61,51 +62,58 @@ export const signin = async (req: Request, res: Response) => {
     }else if (await checkdata('phone', phone)) {
       return res.status(400).json({ error: 'Phone number already exists' });
     }
+    // แปลงรหัสผ่านด เป็นภาษาเอเลี่ยน (้hashed)
+    const hashedPassword = await bcrypt.hash(password, 10);
+   //เอาข้อมูลที่มี default (Role, available) กับอยู่ตารางอื่นออก (phone)
+    const userDataToInsert: Record<string, any> = {
+            username: username, //ไม่ใช้ filter เพราะ คืนค่าเป็น array 
+            email: email,
+            password: hashedPassword,
+            name: name,
+            last: last, 
+            birthdate: birthdate
+        }; 
+    //ถ้ามีการส่งมา แสดงว่าต้องการ set ค่อยเพิ่มใน userDataToInsert
+    if (Role !== undefined && Role !== null) userDataToInsert.Role = Role;
+    if (available !== undefined && available !== null) userDataToInsert.available = available;
+
+    const keys = Object.keys(userDataToInsert);
+    const values = Object.values(userDataToInsert);
+  
+    const sql =`INSERT INTO user_data (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
+
+    const [insertResult] = await db.execute<any>(sql, values);
+    //ดึง id ล่าสุดที่เพิ่มลงไป [result] บังคับดึง array index 0 มาเก็บ result
+    // ResultSetHeader จะมี Property ชื่อ insertId ซ่อนอยู่
+    const id_last = insertResult.insertId;
 
     let token: string;
-    // แปลงรหัสผ่านด เป็นภาษาเอเลี่ยน (้hashed)
-    const hashedPassword = await bcrypt.hash(passwd, 10);
-
-     if (!await db.execute('INSERT INTO user_data (username, email, password, token, name, last, birthdate, Role, available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [username, email, hashedPassword, null, name, last, birthdate, Role, true])) 
-    {
-        return res.status(500).json({ error: 'Failed to create user' });
-    }
-    //ดึง id ล่าสุดที่เพิ่มลงไป [result] บังคับดึง array index 0 มาเก็บ result
-    const [result] = await db.execute('SELECT id_acc FROM user_data WHERE email = ?', [email]);
-    const id_last = (result as any[])[0].id_acc;
-
     do {
         token = gentoken(id_last);
     } while (await checkdata('token', token)); //เช็ค id และ token
     console.log(`Token: ${token}`);
-    if(!await db.execute('UPDATE user_data SET token = ? WHERE id_acc = ?', [token, id_last])) {
-        return res.status(500).json({ error: 'Failed to update user token' });
-    }
 
-    //ยัดลง sql
-    if (!await db.execute('INSERT INTO user_phone (id_acc, phone) VALUES (?, ?)', [id_last, phone])) {
-        return res.status(500).json({ error: 'Failed to create user phone' });
-    }
+    await db.execute('UPDATE user_data SET token = ? WHERE id_acc = ?', [token, id_last]);
+    //ยัดลง token sql
+    await db.execute('INSERT INTO user_phone (id_acc, phone) VALUES (?, ?)', [id_last,phone]);
 
-    res.status(200).json({
-    message: 'Signin successful',
-    id_acc: id_last,
-    username: username,
-    email: email ,
-    hashedPassword: hashedPassword ,
-    name: name,
-    last: last,
-    birthdate: birthdate,
-    Role: Role,
-    available: available,
-    phone: phone,
-    token: token
-    });
-    console.log(`User ${email} signed in successfully`);
+   res.status(201).json({
+      message: 'Signin successful',
+      id_acc: id_last,
+      username,
+      email,
+      name,
+      last,
+      birthdate,      //กันแสดง null , undefined เพราะไม่ได้ส่งมา set
+      Role: Role !== undefined && Role !== null ? Role:'user', 
+      available: available !== undefined && available !== null? available : true,
+      phone,
+      token
+  });
+    console.log(`User ${userDataToInsert.email} signed in successfully`);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
-    throw error;
   }
 };
 //เช็คข้อมูลใน sqlว่ามีข้อมูลทีไหม
