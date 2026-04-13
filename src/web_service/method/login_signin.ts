@@ -26,10 +26,10 @@ import { db } from '../db_connect/db_sql';
         await db.execute('UPDATE user_data SET token = ? WHERE email = ?', [token, email]);
         console.log('Token expired, new token generated');
     }
-    console.log(rows[0]);
+    //console.log(rows[0]);
     res.status(200).json({
         message: 'Login successful' ,
-        id: rows[0].id,
+        id: rows[0].id_acc,
         username: rows[0].username,
         email: email ,
         name: rows[0].name,
