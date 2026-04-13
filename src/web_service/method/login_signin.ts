@@ -10,8 +10,8 @@ import { db } from '../db_connect/db_sql';
       return res.status(400).json({ error: 'Missing email or password' });
     }
     //rows คือ ข้อมูลจากการ sql โดยเป็น array เก็บ object ที่มี key เป็นชื่อ column และ value เป็นค่าของ column นั้นๆ
-    const [rows] = await db.execute('SELECT * FROM user_data WHERE email = ?', [email]);
-    if (!rows || (rows as any[]).length === 0) {
+    const [rows] = await db.execute<any[]>('SELECT * FROM user_data WHERE email = ?', [email]);
+    if (rows.length === 0) {
       return res.status(400).json({ error: 'Invalid email' });
     }
     //แปลงรหัสผ่านที่รับมาเป็นภาษาเอเลี่ยน มาเทียบกับรหัสผ่านในฐานข้อมูล
@@ -26,13 +26,18 @@ import { db } from '../db_connect/db_sql';
         await db.execute('UPDATE user_data SET token = ? WHERE email = ?', [token, email]);
         console.log('Token expired, new token generated');
     }
+    console.log(rows[0]);
     res.status(200).json({
         message: 'Login successful' ,
-        id: (rows as any[])[0].id,
-        username: (rows as any[])[0].username,
+        id: rows[0].id,
+        username: rows[0].username,
         email: email ,
-        name: (rows as any[])[0].name,
-        last: (rows as any[])[0].last,
+        name: rows[0].name,
+        last: rows[0].last,
+        birthdate: rows[0].birthdate,
+        Role: rows[0].Role,
+        available: rows[0].available,
+        token: rows[0].token
     });
     console.log(`User ${email} logged in successfully`);
   } catch (error) {
@@ -93,7 +98,8 @@ export const signin = async (req: Request, res: Response) => {
     birthdate: birthdate,
     Role: Role,
     available: available,
-    phone: phone
+    phone: phone,
+    token: token
     });
     console.log(`User ${email} signed in successfully`);
   } catch (error) {
