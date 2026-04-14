@@ -31,7 +31,7 @@ export const post_repair_his = async(req: Request, res: Response) => {
         }
         //execute ดีกว่า query เพราะใช้ prepared statement เราสามารถใช้ ? แทนค่าได้ แถมเร็วกว่า query
         const [rowuser]: any = await db.execute(
-            `SELECT Role FROM user_data WHERE username = ? AND token = ?`, [data_req.username , data_req.token]);
+            `SELECT Role FROM user_data WHERE username = ? AND token = ? AND is_deleted = FALSE`, [data_req.username , data_req.token]);
 
         if ( rowuser.length === 0) {
             return res.status(403).json({ error: 'Forbidden : missing username or token' });
@@ -39,7 +39,7 @@ export const post_repair_his = async(req: Request, res: Response) => {
         const userPermission = rowuser[0];
         if (userPermission.Role !== 'admin' && userPermission.Role !== 'dev' && userPermission.Role !== 'technician') {
             console.log(userPermission.Role)
-            return res.status(403).json({ error: 'Forbidden : You do not have permission to add poles' });
+            return res.status(403).json({ error: `Forbidden : You do not have permission to add ${table}`});
         }
 
         const values = keys.map(k => data[k]); // เอาค่าที่อยู่ใน keys มาใส่ใน values
