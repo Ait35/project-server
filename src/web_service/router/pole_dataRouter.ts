@@ -10,6 +10,6 @@ router.get('/get_pole', get_pole);
 
 router.post('/post_pole/newPole', post_pole);
 
-router.patch('/patch_pole/:token/:id', patch_pole)
+router.patch('/patch_pole/:token/:id', patch_pole); //id_acc
 
 export default router;

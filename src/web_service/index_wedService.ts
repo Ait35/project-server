@@ -5,6 +5,7 @@ import poleRouter from './router/pole_dataRouter';
 import zoneRouter from './router/zone_dataRouter';
 import configRouter from './router/config_Router';
 import  logRouter  from './router/log_Router';
+import repairRouter from './router/repair_hisRouter';
 
 
 const router = Router();
@@ -15,5 +16,6 @@ router.use(poleRouter);
 router.use(zoneRouter);
 router.use(configRouter);
 router.use(logRouter);
+router.use(repairRouter);
 
 export default router;

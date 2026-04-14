@@ -9,6 +9,6 @@ router.post('/post_config/newConfig', post_config);
 
 router.get('/get_config', get_config);
 
-router.patch('/patch_config/:token/:id', patch_config);
+router.patch('/patch_config/:token/:id', patch_config); //id_acc
 
 export default router;

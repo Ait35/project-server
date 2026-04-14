@@ -9,6 +9,6 @@ router.post('/post_zone/newZone', post_zone);
 
 router.get('/get_zone', get_zone);
 
-router.patch('/patch_zone/:token/:id', patch_zone);
+router.patch('/patch_zone/:token/:id', patch_zone);//id_acc
 
 export default router;
