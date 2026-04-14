@@ -2,10 +2,10 @@ import {Request, Response} from 'express';
 import jwt from 'jsonwebtoken';
 import { db } from '../../../db_connect/db_sql';
 
-export const patch_config = async (req: Request, res: Response) => {
+export const patch_log = async (req: Request, res: Response) => {
     try {
-        const table = 'config';
-        const id_current = 'id_config';
+        const table = 'pole_log';
+        const id_current = 'id_log';
         interface user_req {
             id: number;
             data: Record<string, string | number >; 
@@ -13,7 +13,7 @@ export const patch_config = async (req: Request, res: Response) => {
         const token : string = req.params.token as string;
         const id_acc : string = req.params.id as string;
         const { id, data } = req.body as unknown as user_req;
-        const canEditAdmin: string[] = ['mode' , 'time_on' , 'time_off' , 'brightness' , 'lux' , 'rule_lux'];
+        const canEditAdmin: string[] = [ 'lux_log' , 'status' , 'brightness_log' , 'energy_current' , 'energy_total' , 'time_log' , 'id_pole'];
 
         try{
             jwt.verify(token as string, process.env.JWT_SECRET!);
@@ -26,7 +26,7 @@ export const patch_config = async (req: Request, res: Response) => {
             return res.status(400).send('Bad Request : Missing token or id or data');
         }
         const [getRole]: any = await db.execute(
-           `SELECT Role FROM user_data WHERE id_acc = ? AND token = ?`,[id_acc , token])
+            `SELECT Role FROM user_data WHERE id_acc = ? AND token = ?`,[id_acc , token])
         if(getRole.length === 0){
             console.log(`Error in patch_user getRole : ${getRole}`);
             return res.status(400).send('Bad Request : User not found or token invalid');

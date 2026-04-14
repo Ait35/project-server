@@ -3,6 +3,18 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { db } from '../db_connect/db_sql';
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Login API
+ * 
+ * @param {Request} req - Request object with the body containing email and password
+ * @param {Response} res - Response object to send the response
+ * 
+ * @returns {Promise<Response>} - A promise that resolves with a response object
+ * 
+ * @throws {Error} - Internal server error
+ */
+/*******  5dee3691-1096-4c54-92f0-728ddd232e69  *******/
  export const login = async (req: Request, res: Response) => {
   try {
     const {email , password} = req.body; //req.body คือ เป็น object ที่มี key value

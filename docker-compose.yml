@@ -13,6 +13,16 @@ services:
     volumes:
       - db_data:/var/lib/mysql           # Persistent storage
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+  adminer:
+    image: adminer
+    container_name: project_adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - sqlserver
 
 volumes:
   db_data:
+    external: true
+    name: docker_config_sql_db_data

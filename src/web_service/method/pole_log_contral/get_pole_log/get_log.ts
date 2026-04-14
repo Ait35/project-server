@@ -44,9 +44,11 @@ export const get_log = async (req : Request, res : Response) => {
             }).join(' AND ');
 
             sql += ` WHERE ${select}`;
-            // const push_in_Values = keys.map(key => data[key as keyof typeof data]);
-            // values.push(...push_in_Values);
         }
+        console.log( keys);
+        console.log(data);
+        console.log(sql);
+
         const values: any[] = keys.map(key => data[key as keyof req_data]);
         const [rows] : any[] = await db.execute(sql, values);
         if(rows.length === 0) {

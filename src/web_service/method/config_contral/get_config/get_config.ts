@@ -1,6 +1,7 @@
 import { Request, Response }from 'express';
 import { db } from '../../../db_connect/db_sql';
 import jwt from 'jsonwebtoken';
+import console from 'node:console';
 
 export const get_config = async (req : Request, res : Response) => {
     try{
@@ -11,7 +12,6 @@ export const get_config = async (req : Request, res : Response) => {
         interface req_data{
             token : string;
             id : string;
-            name_zone : string;
             id_config : string;
         }
         const data = req.query as unknown as req_data;
@@ -30,7 +30,7 @@ export const get_config = async (req : Request, res : Response) => {
         }
         //โชว์หมดทั้ง sql สำหรับ มีแค่ token
         let sql: string = `SELECT * FROM ${table}`;
-        //const values: any[] = [];
+        console.log(keys);
         //เช็คส่ามีแค่ token หรือไม่
         if(keys.length > 0){
             const select = keys.map(key => {

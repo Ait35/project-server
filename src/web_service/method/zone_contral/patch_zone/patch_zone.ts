@@ -23,13 +23,13 @@ export const patch_zone = async (req: Request, res: Response) => {
         }
         if (!token || !id || !data || Object.keys(data).length === 0) {
             console.log(`Error in patch_user token : ${token} id : ${id} data : ${JSON.stringify(data)}`);
-            return res.status(400).send('Bad Request');
+            return res.status(400).send('Bad Request : Missing token or id or data');
         }
         const [getRole]: any = await db.execute(
-            `SELECT Role FROM user_data WHERE id_acc = ?`,[id_acc])
+            `SELECT Role FROM user_data WHERE id_acc = ? AND token = ?`,[id_acc , token])
         if(getRole.length === 0){
             console.log(`Error in patch_user getRole : ${getRole}`);
-            return res.status(400).send('Bad Request');
+            return res.status(400).send('Bad Request : User not found or token invalid');
         }
         const Role: string = getRole[0].Role;
 

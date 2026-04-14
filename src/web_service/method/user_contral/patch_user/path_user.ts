@@ -39,8 +39,8 @@ export const patch_user = async (req: Request, res: Response) => {
         if (userTableKeys.length > 0) {
             const selectFields = userTableKeys.map(key => `${key} = ?`).join(', ');
             const values = userTableKeys.map(key => data[key]);
-            const sql: string =`UPDATE user_data SET ${selectFields} WHERE id_acc = ?`;
-            await db.execute(sql, [...values, id] as any[]);
+            const sql: string =`UPDATE user_data SET ${selectFields} WHERE id_acc = ? AND token = ?`; //เพิ่ม token แก้บั๊กค่ือจตรงรี้
+            await db.execute(sql, [...values, id, token] as any[]);
         }
              
         if(keys_data.includes('phone')){
