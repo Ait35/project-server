@@ -2,20 +2,25 @@ import { Request, Response }from 'express';
 import { db } from '../../../db_connect/db_sql';
 import jwt from 'jsonwebtoken';
 
-export const get_config = async (req : Request, res : Response) => {
+export const get_log = async (req : Request, res : Response) => {
     try{
         //set ตรงนี้
-        const table = 'config';
-        const id_current = 'id_config = ?';
+        const table = 'pole_log';
+        const id_current = 'id_log';
 
         interface req_data{
             token : string;
-            id : string;
-            name_zone : string;
-            id_config : string;
+            id : string; //id_log
+            lux_log : string;
+            status : string;
+            brightness_log : string;
+            energy_current : string;
+            energy_total : string;
+            time_log : string;
+            id_pole : string;
         }
         const data = req.query as unknown as req_data;
-        const canget : string[] = ['id','mode' , 'time_on' , 'time_off' , 'brightness' , 'lux' , 'rule_lux'];
+        const canget : string[] = ['id' , 'lux_log' , 'status' , 'brightness_log' , 'energy_current' , 'energy_total' , 'time_log' , 'id_pole'];
         const keys = Object.keys(data).filter(key => canget.includes(key));
 
         if (!data.token){ 
@@ -34,7 +39,7 @@ export const get_config = async (req : Request, res : Response) => {
         //เช็คส่ามีแค่ token หรือไม่
         if(keys.length > 0){
             const select = keys.map(key => {
-                if (key === 'id') return id_current;
+                if (key === 'id') return `${id_current} = ?`;
                 return `${key} = ?`;
             }).join(' AND ');
 
@@ -50,7 +55,7 @@ export const get_config = async (req : Request, res : Response) => {
     
         res.status(200).json({
                 message : `Get ${table} successful`,
-                ... rows
+                ...rows
             }
         );
         

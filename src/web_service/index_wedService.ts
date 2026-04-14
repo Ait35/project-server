@@ -4,6 +4,7 @@ import login_signinRouter from './router/login_signinRouter';
 import poleRouter from './router/pole_dataRouter';
 import zoneRouter from './router/zone_dataRouter';
 import configRouter from './router/config_Router';
+import  logRouter  from './router/log_Router';
 
 
 const router = Router();
@@ -13,5 +14,6 @@ router.use(userRouter);
 router.use(poleRouter);
 router.use(zoneRouter);
 router.use(configRouter);
+router.use(logRouter);
 
 export default router;

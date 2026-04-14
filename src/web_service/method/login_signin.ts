@@ -5,8 +5,8 @@ import { db } from '../db_connect/db_sql';
 
  export const login = async (req: Request, res: Response) => {
   try {
-    const {email , passwd} = req.body; //req.body คือ เป็น object ที่มี key value
-    if(!email || !passwd) {
+    const {email , password} = req.body; //req.body คือ เป็น object ที่มี key value
+    if(!email || !password) {
       return res.status(400).json({ error: 'Missing email or password' });
     }
     //rows คือ ข้อมูลจากการ sql โดยเป็น array เก็บ object ที่มี key เป็นชื่อ column และ value เป็นค่าของ column นั้นๆ
@@ -15,7 +15,7 @@ import { db } from '../db_connect/db_sql';
       return res.status(400).json({ error: 'Invalid email' });
     }
     //แปลงรหัสผ่านที่รับมาเป็นภาษาเอเลี่ยน มาเทียบกับรหัสผ่านในฐานข้อมูล
-    if (!await bcrypt.compare(passwd, (rows as any[])[0].password)) {
+    if (!await bcrypt.compare(password, (rows as any[])[0].password)) {
       return res.status(400).json({ error: 'Invalid password' });
     }
     //สร้าง token ใหม่

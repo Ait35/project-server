@@ -6,7 +6,7 @@ export const get_zone = async (req : Request, res : Response) => {
     try{
         //set ตรงนี้
         const table = 'zone';
-        const id_current = 'id_pole = ?';
+        const id_current = 'id_zone = ?';
 
         interface req_data{
             token : string;
@@ -50,7 +50,7 @@ export const get_zone = async (req : Request, res : Response) => {
     
         res.status(200).json({
                 message : `Get ${table} successful`,
-                data : rows
+                ... rows
             }
         );
         

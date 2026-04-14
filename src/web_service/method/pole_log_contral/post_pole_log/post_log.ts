@@ -2,7 +2,8 @@ import {Request, Response} from 'express';
 import {db} from '../../../db_connect/db_sql';
 import jwt from 'jsonwebtoken';
 
-export const post_pole = async(req: Request, res: Response) => {
+export const post_log = async(req: Request, res: Response) => {
+    const table = 'pole_log';
     try{
         interface pose_req{
             token : string;
@@ -14,7 +15,7 @@ export const post_pole = async(req: Request, res: Response) => {
             return res.status(400).send('Bad Request : Missing Token, Username, or Data');
         }
         const data = data_req.data;
-        const canpost : string[] = ['height' , 'status' , 'bulb_type' , 'max_watt' , 'bulb_size' , 'location' , 'id_zone'];
+        const canpost : string[] = ['lux_log' , 'status' , 'brightness_log' , 'energy_current' , 'energy_total' , 'time_log' , 'id_pole'];
 
         if(!canpost.every(k => Object.keys(data).includes(k))){
             return res.status(400).send('Bad Request : Missing Data');
@@ -29,9 +30,7 @@ export const post_pole = async(req: Request, res: Response) => {
         //execute ดีกว่า query เพราะใช้ prepared statement เราสามารถใช้ ? แทนค่าได้ แถมเร็วกว่า query
         const [rowuser]: any = await db.execute(
             `SELECT Role FROM user_data WHERE username = ? AND token = ?`, [data_req.username , data_req.token]);
-        //console.log(rowuser[0]);
-        // return res.status(200).send('test');
-        //กันอาเรย์ ว่าง เดี่นว server ดับ
+
         if ( rowuser.length === 0) {
             return res.status(403).json({ error: 'Forbidden : missing username or token' });
         } 
@@ -43,15 +42,15 @@ export const post_pole = async(req: Request, res: Response) => {
 
         const values = keys.map(k => data[k]); // เอาค่าที่อยู่ใน keys มาใส่ใน values
         const select = keys.join(', ');
-        const sql = `INSERT INTO pole (${select}) VALUES (${keys.map(() => '?').join(', ')});`;
+        const sql = `INSERT INTO ${table} (${select}) VALUES (${keys.map(() => '?').join(', ')});`;
         const [row] = await db.execute(sql, values as any);
 
         res.status(200).json({
             message : "success",
-            ...row
+            ... row
         });
     }catch (error) {
-        console.log('Error in post_pole', error);
+        console.log(`Error in ${table}`, error);
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }

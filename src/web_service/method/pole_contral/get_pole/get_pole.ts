@@ -51,7 +51,7 @@ export const get_pole = async (req : Request, res : Response) => {
     
         res.status(200).json({
                 message : 'Get pole successful',
-                data : rows
+                ... rows
             }
         );
         

@@ -46,7 +46,7 @@ export const post_config = async(req: Request, res: Response) => {
 
         res.status(200).json({
             message : "success",
-            data : row
+            ... row
         });
     }catch (error) {
         console.log('Error in post_pole', error);
