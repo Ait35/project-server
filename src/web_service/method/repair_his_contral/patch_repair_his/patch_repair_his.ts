@@ -1,6 +1,7 @@
 import {Request, Response} from 'express';
 import jwt from 'jsonwebtoken';
 import { db } from '../../../db_connect/db_sql';
+import { ResultSetHeader } from 'mysql2';
 
 export const patch_repair_his = async (req: Request, res: Response) => {
     try {
@@ -13,7 +14,7 @@ export const patch_repair_his = async (req: Request, res: Response) => {
         const token : string = req.params.token as string;
         const id_acc : string = req.params.id as string;
         const { id, data } = req.body as unknown as user_req;
-        const canEditAdmin: string[] = ["status", "time_breaks", "time_repair_start","time_repair_end", "id_pole"];
+        const canEdit: string[] = ["status", "time_breaks", "time_repair_start","time_repair_end", "id_pole", "name_part"];
 
         try{
             jwt.verify(token as string, process.env.JWT_SECRET!);
@@ -26,24 +27,25 @@ export const patch_repair_his = async (req: Request, res: Response) => {
             return res.status(400).send('Bad Request : Missing token or id or data');
         }
         const [getRole]: any = await db.execute(
-            `SELECT Role FROM user_data WHERE id_acc = ? AND token = ?`,[id_acc , token])
+            `SELECT Role FROM user_data WHERE id_acc = ? AND token = ? AND is_deleted = FALSE`,[id_acc , token])
         if(getRole.length === 0){
             console.log(`Error in patch_user getRole : ${getRole}`);
             return res.status(400).send('Bad Request : User not found or token invalid');
         }
         const Role: string = getRole[0].Role;
 
-        if(Role !== 'admin' && Role !== 'dev'){
+        if(Role !== 'admin' && Role !== 'dev' && Role !== 'technician'){
             return res.status(403).json({ error: 'Forbidden : does not have permission' });
         }
         // เช็คว่า data ที่ส่งมามี key ที่อยู่ใน canEdit (includes return true or false) หรือไม่ ถ้สไม่จะดป็นว่าง
-        const keys = Object.keys(data).filter(key => canEditAdmin.includes(key));
-
+        let keys = Object.keys(data).filter(key => canEdit.includes(key));
+        
         if (keys.length === 0) {
             console.log(`Error in patch_user keys_data : ${keys}`);
             return res.status(400).send('Bad Request');
         }
         console.log(keys);
+
         const selectFields = keys.map(key => `${key} = ?`).join(', ');
         const values = keys.map(key => data[key]);
         console.log(values);

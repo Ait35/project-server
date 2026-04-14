@@ -16,9 +16,10 @@ export const get_repair_his = async (req : Request, res : Response) => {
             time_repair_start : string;
             time_repair_end : string;
             id_pole : string;
+            name_part : string;
         }
         const data = req.query as unknown as req_data;
-        const canget : string[] = ['id','mode' , 'time_on' , 'time_off' , 'brightness' , 'lux' , 'rule_lux'];
+        const canget : string[] = ['id',"status", "time_breaks", "time_repair_start","time_repair_end", "id_pole" , "name_part"];
         const keys = Object.keys(data).filter(key => canget.includes(key));
 
         if (!data.token){ 
@@ -32,22 +33,32 @@ export const get_repair_his = async (req : Request, res : Response) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         //โชว์หมดทั้ง sql สำหรับ มีแค่ token
-        let sql: string = `SELECT * FROM ${table}`;
+        let sql: string = `SELECT * FROM ${table} WHERE is_deleted = FALSE`;
+
         console.log(keys);
+        const values: any[] = [];
         //เช็คส่ามีแค่ token หรือไม่
         if(keys.length > 0){
             const select = keys.map(key => {
-                if (key === 'id') return `${id_current} = ?`;
-                return `${key} = ?`;
+                if (key === 'id') {
+                    values.push(String(data[key]).trim());
+                    return id_current;
+                }
+                else if (key === 'name_part') {
+                    values.push(`%${String(data[key]).trim()}%`);
+                    return `${key} LIKE ?`;
+                }
+                else{
+                    values.push(data[key as keyof req_data]);
+                    return `${key} = ?`;
+                }
             }).join(' AND ');
-
-            sql += ` WHERE ${select}`;
+            sql += ` AND ${select}`;
         }
         console.log( keys);
         console.log(data);
         console.log(sql);
-        
-        const values: any[] = keys.map(key => data[key as keyof req_data]);
+
         const [rows] : any[] = await db.execute(sql, values);
         if(rows.length === 0) {
             return res.status(404).send('Not Found');

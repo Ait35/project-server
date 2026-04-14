@@ -19,6 +19,7 @@ export const get_log = async (req : Request, res : Response) => {
             time_log : string;
             id_pole : string;
         }
+
         const data = req.query as unknown as req_data;
         const canget : string[] = ['id' , 'lux_log' , 'status' , 'brightness_log' , 'energy_current' , 'energy_total' , 'time_log' , 'id_pole'];
         const keys = Object.keys(data).filter(key => canget.includes(key));

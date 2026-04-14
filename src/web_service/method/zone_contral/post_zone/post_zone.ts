@@ -1,6 +1,7 @@
 import {Request, Response} from 'express';
 import {db} from '../../../db_connect/db_sql';
 import jwt from 'jsonwebtoken';
+import { ResultSetHeader } from 'mysql2';
 
 export const post_zone = async(req: Request, res: Response) => {
     try{
@@ -28,7 +29,7 @@ export const post_zone = async(req: Request, res: Response) => {
         }
         //execute ดีกว่า query เพราะใช้ prepared statement เราสามารถใช้ ? แทนค่าได้ แถมเร็วกว่า query
         const [rowuser]: any = await db.execute(
-            `SELECT Role FROM user_data WHERE username = ? AND token = ?`, [data_req.username , data_req.token]);
+            `SELECT Role FROM user_data WHERE username = ? AND token = ? AND is_deleted = FALSE`, [data_req.username , data_req.token]);
 
         if ( rowuser.length === 0) {
             return res.status(403).json({ error: 'Forbidden : missing username or token' });
@@ -42,14 +43,15 @@ export const post_zone = async(req: Request, res: Response) => {
         const values = keys.map(k => data[k]); // เอาค่าที่อยู่ใน keys มาใส่ใน values
         const select = keys.join(', ');
         const sql = `INSERT INTO zone (${select}) VALUES (${keys.map(() => '?').join(', ')});`;
-        const [row] = await db.execute(sql, values as any);
+        const [row] = await db.execute<ResultSetHeader>(sql, values as any);
 
-        res.status(200).json({
+        res.status(201).json({
             message : "success",
-            data : row
+            id_zone : row.insertId,
+            ...row
         });
     }catch (error) {
-        console.log('Error in post_pole', error);
+        console.log('Error in post_zone', error);
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }

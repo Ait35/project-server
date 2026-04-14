@@ -13,11 +13,11 @@ export const get_zone = async (req : Request, res : Response) => {
             id : string;
             name_zone : string;
             id_config : string;
-        }
+        }   
         const data = req.query as unknown as req_data;
         const canget : string[] = ['id' , 'name_zone' , 'id_config'];
         const keys = Object.keys(data).filter(key => canget.includes(key));
-
+        console.log(keys);
         if (!data.token){ 
             return res.status(400).send('Bad Request : Missing Token');
         }
@@ -29,21 +29,30 @@ export const get_zone = async (req : Request, res : Response) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         //โชว์หมดทั้ง sql สำหรับ มีแค่ token
-        let sql: string = `SELECT * FROM ${table}`;
-        //const values: any[] = [];
+        let sql: string = `SELECT * FROM ${table} WHERE is_deleted = FALSE`;
+        const values: any[] = [];
         //เช็คส่ามีแค่ token หรือไม่
         if(keys.length > 0){
             const select = keys.map(key => {
-                if (key === 'id') return id_current;
-                return `${key} = ?`;
+                if (key === 'id') {
+                    values.push(String(data[key]).trim());
+                    return id_current;
+                }
+                else if (key === 'name_zone') {
+                    values.push(`%${String(data[key]).trim()}%`);
+                    return `${key} LIKE ?`;
+                }
+                else{
+                    values.push(data[key as keyof req_data]);
+                    return `${key} = ?`;
+                }
             }).join(' AND ');
 
-            sql += ` WHERE ${select}`;
-            // const push_in_Values = keys.map(key => data[key as keyof typeof data]);
-            // values.push(...push_in_Values);
+            sql += ` AND ${select}`;
         }
-        const values: any[] = keys.map(key => data[key as keyof req_data]);
+      
         const [rows] : any[] = await db.execute(sql, values);
+
         if(rows.length === 0) {
             return res.status(404).send('Not Found');
         }

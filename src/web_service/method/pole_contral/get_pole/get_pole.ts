@@ -12,11 +12,12 @@ export const get_pole = async (req : Request, res : Response) => {
             bulb_type : string;
             max_watt : string;
             bulb_size : string;
-            location : string;
+            latitude : string;  
+            longitude  : string;
             id_zone : string;
         }
         const data = req.query as unknown as pole_req;
-        const canget : string[] = ['id' , 'height' , 'status' , 'bulb_type' , 'max_watt' , 'bulb_size' , 'location' , 'id_zone'];
+        const canget : string[] = ['id' , 'height' , 'status' , 'bulb_type' , 'max_watt' , 'bulb_size' , "latitude", "longitude"   , 'id_zone'];
         const keys = Object.keys(data).filter(key => canget.includes(key));
 
         if (!data.token){ 
@@ -30,18 +31,26 @@ export const get_pole = async (req : Request, res : Response) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         //โชว์หมดทั้ง sql สำหรับ มีแค่ token
-        let sql: string = `SELECT * FROM pole`;
+        let sql: string = `SELECT * FROM pole WHERE is_deleted = FALSE`;
         const values: any[] = [];
         //เช็คส่ามีแค่ token หรือไม่
         if(keys.length > 0){
             const select = keys.map(key => {
-                if (key === 'id') return 'id_pole = ?';
-                return `${key} = ?`;
+                if (key === 'id') {
+                    values.push(String(data[key]).trim());
+                    return 'id_pole = ?';
+                }
+                else if (key === 'bulb_type') {
+                    values.push(`%${String(data[key]).trim()}%`);
+                    return `${key} LIKE ?`;
+                }   
+                else{
+                    values.push(data[key as keyof typeof data].trim());
+                    return `${key} = ?`;
+                }
             }).join(' AND ');
 
-            sql += ` WHERE ${select}`;
-            const push_in_Values = keys.map(key => data[key as keyof typeof data]);
-            values.push(...push_in_Values);
+            sql += ` AND ${select}`;
         }
         
         const [rows] : any[] = await db.execute(sql, values);

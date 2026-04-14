@@ -29,7 +29,7 @@ export const get_config = async (req : Request, res : Response) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         //โชว์หมดทั้ง sql สำหรับ มีแค่ token
-        let sql: string = `SELECT * FROM ${table}`;
+        let sql: string = `SELECT * FROM ${table} WHERE is_deleted = FALSE`;
         console.log(keys);
         //เช็คส่ามีแค่ token หรือไม่
         if(keys.length > 0){
@@ -38,7 +38,7 @@ export const get_config = async (req : Request, res : Response) => {
                 return `${key} = ?`;
             }).join(' AND ');
 
-            sql += ` WHERE ${select}`;
+            sql += ` AND ${select}`;
             // const push_in_Values = keys.map(key => data[key as keyof typeof data]);
             // values.push(...push_in_Values);
         }

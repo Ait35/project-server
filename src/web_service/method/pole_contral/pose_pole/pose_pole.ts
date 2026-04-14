@@ -1,6 +1,7 @@
 import {Request, Response} from 'express';
 import {db} from '../../../db_connect/db_sql';
 import jwt from 'jsonwebtoken';
+import { ResultSetHeader } from 'mysql2';
 
 export const post_pole = async(req: Request, res: Response) => {
     try{
@@ -14,7 +15,7 @@ export const post_pole = async(req: Request, res: Response) => {
             return res.status(400).send('Bad Request : Missing Token, Username, or Data');
         }
         const data = data_req.data;
-        const canpost : string[] = ['height' , 'status' , 'bulb_type' , 'max_watt' , 'bulb_size' , 'location' , 'id_zone'];
+        const canpost : string[] = ['height' , 'status' , 'bulb_type' , 'max_watt' , 'bulb_size' , "latitude", "longitude" , 'id_zone'];
 
         if(!canpost.every(k => Object.keys(data).includes(k))){
             return res.status(400).send('Bad Request : Missing Data');
@@ -28,7 +29,7 @@ export const post_pole = async(req: Request, res: Response) => {
         }
         //execute ดีกว่า query เพราะใช้ prepared statement เราสามารถใช้ ? แทนค่าได้ แถมเร็วกว่า query
         const [rowuser]: any = await db.execute(
-            `SELECT Role FROM user_data WHERE username = ? AND token = ?`, [data_req.username , data_req.token]);
+            `SELECT Role FROM user_data WHERE username = ? AND token = ? AND is_deleted = FALSE`, [data_req.username , data_req.token]);
         //console.log(rowuser[0]);
         // return res.status(200).send('test');
         //กันอาเรย์ ว่าง เดี่นว server ดับ
@@ -44,10 +45,11 @@ export const post_pole = async(req: Request, res: Response) => {
         const values = keys.map(k => data[k]); // เอาค่าที่อยู่ใน keys มาใส่ใน values
         const select = keys.join(', ');
         const sql = `INSERT INTO pole (${select}) VALUES (${keys.map(() => '?').join(', ')});`;
-        const [row] = await db.execute(sql, values as any);
+        const [row] = await db.execute<ResultSetHeader>(sql, values as any);
 
-        res.status(200).json({
+        res.status(201).json({
             message : "success",
+            id_pole : (row as ResultSetHeader).insertId,
             ...row
         });
     }catch (error) {

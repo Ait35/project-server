@@ -1,6 +1,7 @@
 import {Request, Response} from 'express';
 import {db} from '../../../db_connect/db_sql';
 import jwt from 'jsonwebtoken';
+import { ResultSetHeader } from 'mysql2';
 
 export const post_repair_his = async(req: Request, res: Response) => {
     const table = 'repair_history';
@@ -15,11 +16,12 @@ export const post_repair_his = async(req: Request, res: Response) => {
             return res.status(400).send('Bad Request : Missing Token, Username, or Data');
         }
         const data = data_req.data;
-        const canpost : string[] = ["status", "time_breaks", "time_repair_start","time_repair_end", "id_pole"];
-
+        const canpost : string[] = ["status", "time_breaks", "time_repair_start","time_repair_end", "id_pole" , "name_part"];
+        //ถ้า array มีจำนวนมากกว่า “ที่คาดไว้” แต่ทุกตัวยังตรงกับเงื่อนไขทั้งหมด every ก็จะได้ true
         if(!canpost.every(k => Object.keys(data).includes(k))){
             return res.status(400).send('Bad Request : Missing Data');
         }
+
         const keys = canpost;
         try{
             jwt.verify(data_req.token as string, process.env.JWT_SECRET!);
@@ -35,7 +37,7 @@ export const post_repair_his = async(req: Request, res: Response) => {
             return res.status(403).json({ error: 'Forbidden : missing username or token' });
         } 
         const userPermission = rowuser[0];
-        if (userPermission.Role !== 'admin' && userPermission.Role !== 'dev') {
+        if (userPermission.Role !== 'admin' && userPermission.Role !== 'dev' && userPermission.Role !== 'technician') {
             console.log(userPermission.Role)
             return res.status(403).json({ error: 'Forbidden : You do not have permission to add poles' });
         }
@@ -43,11 +45,13 @@ export const post_repair_his = async(req: Request, res: Response) => {
         const values = keys.map(k => data[k]); // เอาค่าที่อยู่ใน keys มาใส่ใน values
         const select = keys.join(', ');
         const sql = `INSERT INTO ${table} (${select}) VALUES (${keys.map(() => '?').join(', ')});`;
-        const [row] = await db.execute(sql, values as any);
-        console.log(row);
-        res.status(200).json({
+        const [callback_insert] = await db.execute<ResultSetHeader>(sql, values as any);
+        console.log(callback_insert);
+
+        res.status(201).json({
             message : "success",
-            ... row
+            id_repair : callback_insert.insertId,
+            ... callback_insert
         });
     }catch (error) {
         console.log(`Error in ${table}`, error);

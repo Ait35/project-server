@@ -29,34 +29,6 @@ export const All_OneData_user = async (req: Request, res: Response) => {
         // กำหนดว่า attribute ที่ค้นหาอยู่ในตารางไหน? (p = phone, u = user)
         const targetTable = attribute === 'phone' ? 'p' : 'u';
 
-        if(attribute == 'token'){
-             try{
-                    jwt.verify(attribute as string, process.env.JWT_SECRET!);
-            }catch (error) {
-                    console.log('Token expired or invalid in token');
-                    return res.status(401).json({ error: 'Unauthorized' });
-            }
-            const [id] = await db.execute<any[]>(`SELECT iad_acc FROM user_data WHERE ${attribute} = ?`, [data]);
-            const sql = `
-            SELECT 
-                ${selectFields}, 
-                GROUP_CONCAT(p.phone SEPARATOR ', ') AS phone 
-            FROM user_data u
-            LEFT JOIN user_phone p ON u.id_acc = p.id_acc
-            WHERE ${targetTable}.${id} = ?
-            GROUP BY u.id_acc`;
-            const [rows] = await db.execute<any[]>(sql, [data]);
-            if (rows.length === 0) {
-                console.log(`User not found with ${attribute} : ${data}`);
-                return res.status(400).json({ error: 'User not found' });
-            }
-
-            res.status(200).json({
-                message: 'Get user successful',
-                ...rows[0]
-            });
-        }
-
         const sql = `
             SELECT 
                 ${selectFields}, 

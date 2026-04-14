@@ -13,7 +13,7 @@ export const patch_pole = async (req: Request, res: Response) => {
         const token : string = req.params.token as string;
         const id_acc : string = req.params.id as string;
         const { id, data } = req.body as unknown as user_req;
-        const canEditAdmin: string[] = ['height' , 'status' , 'bulb_type' , 'max_watt' , 'bulb_size' , 'location' , 'id_zone'];
+        const canEditAdmin: string[] = ['height' , 'status' , 'bulb_type' , 'max_watt' , 'bulb_size' , "latitude", "longitude"  , 'id_zone'];
 
         try{
             jwt.verify(token as string, process.env.JWT_SECRET!);
@@ -26,7 +26,7 @@ export const patch_pole = async (req: Request, res: Response) => {
             return res.status(400).send('Bad Request : Missing token or id or data');
         }
         const [getRole]: any = await db.execute(
-            `SELECT Role FROM user_data WHERE id_acc = ? AND token = ?`,[id_acc , token])
+            `SELECT Role FROM user_data WHERE id_acc = ? AND token = ? AND is_deleted = FALSE`,[id_acc , token])
         if(getRole.length === 0){
             console.log(`Error in patch_user getRole : ${getRole}`);
             return res.status(400).send('Bad Request : User not found : User not found or token invalid');
