@@ -30,7 +30,7 @@ export const post_assign = async(req: Request, res: Response) => {
         }
         //execute ดีกว่า query เพราะใช้ prepared statement เราสามารถใช้ ? แทนค่าได้ แถมเร็วกว่า query
         const [rowuser]: any = await db.execute(
-            `SELECT Role FROM user_data WHERE username = ? AND token = ? AND is_deleted = FALSE`, [data_req.username , data_req.token]);
+            `SELECT Role FROM user_data WHERE username = ? AND token = ? AND is_deleted = FALSE AND available = TRUE `, [data_req.username , data_req.token]);
 
         if ( rowuser.length === 0) {
             return res.status(403).json({ error: 'Forbidden : missing username or token' });

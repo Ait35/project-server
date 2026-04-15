@@ -29,7 +29,7 @@ export const patch_config = async (req: Request, res: Response) => {
            `SELECT Role FROM user_data WHERE id_acc = ? AND token = ? AND is_deleted = FALSE`,[id_acc , token])
         if(getRole.length === 0){
             console.log(`Error in patch_user getRole : ${getRole}`);
-            return res.status(400).send('Bad Request : User not found or token invalid');
+            return res.status(400).send('Bad Request : Id not found or token invalid');
         }
         const Role: string = getRole[0].Role;
 

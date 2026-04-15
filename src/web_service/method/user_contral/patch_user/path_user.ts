@@ -1,18 +1,18 @@
 import {Request, Response} from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { db } from '../../../db_connect/db_sql';
 
 export const patch_user = async (req: Request, res: Response) => {
     try {
         interface user_req {
-            token: string;
-            id: number;
-            Role: string;
+            token: string; // token ที่คนจะแก้ส่งมา
+            id: number; //id ทีต้องเขาการแก้
             data: Record<string, string | number | boolean>; 
         }
-        const { token, id, Role, data } = req.body as unknown as user_req;
+        const { token, id, data } = req.body as unknown as user_req;
         const canEdit: string[] = ['username','name', 'last', 'birthdate', 'available', 'phone'];
-        const canEditAdmin: string[] = ['email','Role' ,...canEdit];
+        const canEditAdmin: string[] = ['email',"password",'Role' ,...canEdit];
 
         try{
             jwt.verify(token as string, process.env.JWT_SECRET!);
@@ -20,13 +20,23 @@ export const patch_user = async (req: Request, res: Response) => {
             console.log('Token expired or invalid in token');
             return res.status(401).json({ error: 'Unauthorized' });
         }
-        if (!token || !id || !Role || !data || Object.keys(data).length === 0) {
-            console.log(`Error in patch_user token : ${token} id : ${id} Role : ${Role} data : ${JSON.stringify(data)}`);
+        if (!token || !id  || !data || Object.keys(data).length === 0) {
+            console.log(`Error in patch_user token : ${token} id : ${id} data : ${JSON.stringify(data)}`);
             return res.status(400).send('Bad Request');
         }
-        const keys: string[] = Role === 'admin' || Role === 'dev' ? canEditAdmin : canEdit;
+        const [Role]: any = await db.execute(`SELECT Role, id_acc FROM user_data WHERE token = ? AND is_deleted = FALSE`,[token]);
+
+        if (Role.length === 0) {
+            console.log(`Error in patch_user Role : ${Role}`);
+            return res.status(400).send('Bad Request');
+        }
+
+        if ((Role[0].Role === 'user' || Role[0].Role === 'technician') && Role[0].id_acc !== Number(id)) {
+            return res.status(403).json({ error: 'Forbidden : You can only edit your own profile' });
+        }
+        const keys: string[] = Role[0].Role === 'admin' || Role[0].Role === 'dev' ? canEditAdmin : canEdit;
         // เช็คว่า data ที่ส่งมามี key ที่อยู่ใน keys หรือไม่ ถ้สไม่จะดป็นว่าง
-        const keys_data = Object.keys(data).filter(key => keys.includes(key));
+        let keys_data = Object.keys(data).filter(key => keys.includes(key));
 
         if (keys_data.length === 0) {
             console.log(`Error in patch_user keys_data : ${keys_data}`);
@@ -34,13 +44,18 @@ export const patch_user = async (req: Request, res: Response) => {
         }
         // ผลลัพธ์: [ 'id_acc', 'name', 'phone' ] 
         console.log(keys_data);  
+        // ไม่มีทางเป็น User or ช่าง เพราะเขียนดักไว้แล้ว
+        if(keys_data.includes('password')){
+            data['password'] = await bcrypt.hash(data['password'] as string, 10);
+        }
+
         const userTableKeys = keys_data.filter((k) => k !== 'phone');
         // กันส่งแค่ phone เพราะจะโดน userTableKeys เอาออก แต่มันมีค่าไง
         if (userTableKeys.length > 0) {
             const selectFields = userTableKeys.map(key => `${key} = ?`).join(', ');
             const values = userTableKeys.map(key => data[key]);
-            const sql: string =`UPDATE user_data SET ${selectFields} WHERE id_acc = ? AND token = ?`; //เพิ่ม token แก้บั๊กค่ือจตรงรี้
-            await db.execute(sql, [...values, id, token] as any[]);
+            const sql: string =`UPDATE user_data SET ${selectFields} WHERE id_acc = ?`; 
+            await db.execute(sql, [...values, id] as any[]);
         }
              
         if(keys_data.includes('phone')){

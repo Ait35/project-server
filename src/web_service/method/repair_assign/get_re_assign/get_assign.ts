@@ -9,13 +9,8 @@ export const get_assign = async (req : Request, res : Response) => {
         const table = 'repair_assign';
         interface req_data{
             token : string;
-            id : string;
-            status : string;
-            time_breaks : string;
-            time_repair_start : string;
-            time_repair_end : string;
-            id_pole : string;
-            name_part : string;
+            id_acc : string;
+            id_repair : string;
         }
         const data = req.query as unknown as req_data;
         const canget : string[] = ['id_acc', 'id_repair'];
@@ -32,13 +27,13 @@ export const get_assign = async (req : Request, res : Response) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         //โชว์หมดทั้ง sql สำหรับ มีแค่ token
-        let sql: string = `SELECT * FROM ${table} WHERE is_deleted = FALSE`;
+        let sql: string = `SELECT * FROM ${table}`;
 
         console.log(keys);
         //เช็คส่ามีแค่ token หรือไม่
         if(keys.length > 0){
             const select = keys.map(key => `${key} = ?`).join(' AND ');
-            sql += ` AND ${select}`;
+            sql += ` WHERE ${select}`;
         }
         console.log( keys);
         console.log(data);

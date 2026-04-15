@@ -27,14 +27,14 @@ export const get_user = async (req: Request, res: Response) => {
             let [row_acc] = await db.execute(`SELECT id_acc FROM user_data WHERE ${attribute_find} = ?`, [data]);
 
             const id_acc = (row_acc as any[])[0].id_acc;
-            [row] = await db.execute(`SELECT ${attribute} FROM user_phone WHERE id_acc = ?`, [id_acc]);
+            [row] = await db.execute(`SELECT ${attribute} FROM user_phone WHERE id_acc = ? AND is_deleted = FALSE`, [id_acc]);
         }else if(attribute_find === 'phone') {
-            let [row_acc] = await db.execute(`SELECT id_acc FROM user_phone WHERE phone = ?`, [data]);   
+            let [row_acc] = await db.execute(`SELECT id_acc FROM user_phone p user_data u WHERE p.phone = ? AND u.is_deleted = FALSE`, [data]);   
             const id_acc = (row_acc as any[])[0].id_acc;
-            [row] = await db.execute(`SELECT ${attribute} FROM user_data WHERE id_acc = ?`, [id_acc]);
+            [row] = await db.execute(`SELECT ${attribute} FROM user_data WHERE id_acc = ? AND is_deleted = FALSE`, [id_acc]);
         }
         else{
-            [row] = await db.execute(`SELECT ${attribute} FROM user_data WHERE ${attribute_find} = ?`, [data]);
+            [row] = await db.execute(`SELECT ${attribute} FROM user_data WHERE ${attribute_find} = ? AND is_deleted = FALSE`, [data]);
         }
     
         if((row as any[]).length === 0) {

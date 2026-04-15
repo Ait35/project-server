@@ -35,7 +35,7 @@ export const All_OneData_user = async (req: Request, res: Response) => {
                 GROUP_CONCAT(p.phone SEPARATOR ', ') AS phone 
             FROM user_data u
             LEFT JOIN user_phone p ON u.id_acc = p.id_acc
-            WHERE ${targetTable}.${attribute} = ?
+            WHERE ${targetTable}.${attribute} = ? AND u.is_deleted = FALSE
             GROUP BY u.id_acc
         `;
         const [rows] = await db.execute<any[]>(sql, [data]);

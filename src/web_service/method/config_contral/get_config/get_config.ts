@@ -12,7 +12,6 @@ export const get_config = async (req : Request, res : Response) => {
         interface req_data{
             token : string;
             id : string;
-            id_config : string;
         }
         const data = req.query as unknown as req_data;
         const canget : string[] = ['id','mode' , 'time_on' , 'time_off' , 'brightness' , 'lux' , 'rule_lux'];

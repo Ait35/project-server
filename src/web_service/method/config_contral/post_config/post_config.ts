@@ -18,6 +18,7 @@ export const post_config = async(req: Request, res: Response) => {
         const canpost : string[] = ['mode' , 'time_on' , 'time_off' , 'brightness' , 'lux' , 'rule_lux' ];
 
         if(!canpost.every(k => Object.keys(data).includes(k))){
+            console.log(data);
             return res.status(400).send('Bad Request : Missing Data');
         }
         const keys = canpost;
