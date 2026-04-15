@@ -19,7 +19,7 @@
 //         "rule_lux": 20
 //     } 
 // }
-// if success response (json)
+// if success response (json) is /post_config
 // {"message":"success","id_config":6,"fieldCount":0,"affectedRows":1,"insertId":6,"info":"","serverStatus":2,"warningStatus":0,"changedRows":0}
 //====================================================================================
 // req data structure in method get(query) : Rule of req data
@@ -32,7 +32,7 @@
 // {"0":{"id_config":1,"mode":"auto","time_on":"18:00:00","time_off":"06:00:00","brightness":100,"lux":20,"rule_lux":15,"is_deleted":0},"message":"Get config successful"}
 //====================================================================================
 // req data structure in method patch(body,params) : Rule of req data
-// Enter token และid_acc บน api บน api      : - token และ ia_acc ต้องมีใน api
+// Enter token และ id_acc บน api บน api     : - token และ ia_acc ต้องมีใน api
 //ยืนยันตัวตน ตัวอย่าง เช่น /patch_config/token/1 : - ต้องเป็น Dev or Admin้
 // { // แนบข้อมูลที่จะแก้ผ่าน body               : - ต้องแนบ body ข้อมูลที่จะแก
 //     "id" : 2, //id_config
@@ -41,7 +41,7 @@
 //         "time_off": "06:00:00"
 //     }
 // }                                       
-// if success response (json) is /get_config?token=token&id=dev
+// if success response (json) is /patch_config/token/1 
 // {"message":"Config updated successfully","time_on":"19:00:00","time_off":"06:00:00"}
 
 
@@ -56,7 +56,8 @@
 //   "password": "hashed_password_here",  : - token auto generate
 //   "name": "Somchai",
 //   "last": "Jaidee",
-//   "birthdate": "2000-01-01"
+//   "birthdate": "2000-01-01",
+//    "phone" : "0877755412"
 // }
 // if success response (json)
 // {"message":"Signin successful","id_acc":4,"username":"tester02","email":"test02@gmail.com","name":"Som","last":"chai","birthdate":"2000-01-01","Role":"admin","available":false,"phone":"0877755412","token":"token"}
@@ -87,5 +88,25 @@
 //         "name" : "ait"
 //     }
 // }                                    
-// if success response (json) is /get_config?token=token&id=dev
+// if success response (json) is /patch_user
 // {"message":"User updated successfully"}
+//=======================================================================================
+
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// req req data structure in method delete (soft delete) มีบ้าง table หาดูเลย
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//                                        
+// ใช้การ req แบบ params และ body          : Rule of req data
+// รูปแบบที่ 1 แบบไม่มี FK หรือ การ Fk ไม่สำคัญ  : - ต้องมีข้อมูลใน body ครบ
+// delete_zone/ID เป้าหมายที่ต้องการลบ        : - ต้องมี ID ในการลบ และ ID ห้ามเป็น 1
+//{                                       : - ต้องเป็น admin, dev เท่านั้น ที่ลบได้หมดทุก table
+//    "token":"token",                    : - ถ้าเป็นลบ user ผู้ใช้จะสามารถลบของตัวเองเท่านั้น
+//   "status" : true                      : - ถ้าเป็น assign table ,technician สามารถลบได้
+//}                                       : - table assign เป้น hard delete หายจริง
+// รูปแบบที่ 2 กรณีที่มีตัว ไปเป็น FK สำคัญ ของ   :
+// table อื่น ระบบจะแก้ FK table นั้นเป้น 1 
+// อัตโนมัส ไม่ต้องตกใจ มันเป้น default หน่ะ
+//
+// if success response (json) is delete_zone/ID
+//{"message":"zone deleted successfully","config_affected":1,"zone_affected":3}

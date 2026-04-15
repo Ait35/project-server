@@ -6,7 +6,7 @@ import { db } from '../../../db_connect/db_sql';
 export const All_data_user = async (req: Request, res: Response) => {
     try{
         const {token} = req.params;
-        const canfind = ['id_acc', 'username', 'email', 'name', 'last', 'birthdate', 'Role', 'available'];
+        const canfind = ['id_acc', 'username', 'email', 'name', 'last', 'birthdate', 'Role', 'available', 'is_deleted'];
         if(!token)
         {
             console.log(`Error in All_data_user token is missing`);
@@ -25,7 +25,7 @@ export const All_data_user = async (req: Request, res: Response) => {
                 ${selectFields}, 
                 GROUP_CONCAT(p.phone SEPARATOR ', ') AS phone -- มัดรวมหลายเบอร์เข้าด้วยกัน
             FROM user_data u
-            LEFT JOIN user_phone p ON u.id_acc = p.id_acc
+            INNER JOIN user_phone p ON u.id_acc = p.id_acc AND u.is_deleted = FALSE
             GROUP BY u.id_acc -- ยุบรวมตาม ID ของ User
         `;
         const [row] = await db.execute<any[]>(sql);

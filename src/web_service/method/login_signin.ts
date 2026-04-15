@@ -1,7 +1,8 @@
-import { Request, Response } from 'express';
+import e, { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { db } from '../db_connect/db_sql';
+import { ResultSetHeader } from 'mysql2';
 
 
  export const login = async (req: Request, res: Response) => {
@@ -56,12 +57,18 @@ export const signin = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     //เช็ค mail username phone 
-    if (await checkdata('email', email)) {
-      return res.status(400).json({ error: 'Email already exists' });
-    }else if (await checkdata('username', username)) {
-      return res.status(400).json({ error: 'Username already exists' });
-    }else if (await checkdata('phone', phone)) {
-      return res.status(400).json({ error: 'Phone number already exists' });
+    const [row_phone]: any[] = await db.execute(`SELECT 1 FROM user_phone WHERE phone = ?`, [phone]);
+    const [row_email]: any[] = await db.execute(`SELECT is_deleted,id_acc FROM user_data WHERE email = ?`, [email]);
+    let come_back : boolean = false;
+
+    if (row_email.length != 0) {
+      if(row_email[0].is_deleted == false){
+        return res.status(400).json({ error: 'Email already exists' });
+      }
+      come_back = true;
+    }
+    if (row_phone.length > 0) {
+      return res.status(400).json({ error: 'Email or phone already exists' });
     }
     // แปลงรหัสผ่านด เป็นภาษาเอเลี่ยน (้hashed)
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -79,53 +86,84 @@ export const signin = async (req: Request, res: Response) => {
     if (available !== undefined && available !== null) userDataToInsert.available = available;
 
     const keys = Object.keys(userDataToInsert);
-    const values = Object.values(userDataToInsert);
-  
-    const sql =`INSERT INTO user_data (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
+    let values : any[]
+    let sql: string ;
+    if(come_back === false){
+      sql =`INSERT INTO user_data (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
 
-    const [insertResult] = await db.execute<any>(sql, values);
-    //ดึง id ล่าสุดที่เพิ่มลงไป [result] บังคับดึง array index 0 มาเก็บ result
-    // ResultSetHeader จะมี Property ชื่อ insertId ซ่อนอยู่
-    const id_last = insertResult.insertId;
+      values = keys.map(key => userDataToInsert[key]);  
+    }else{
+      const key_filter = keys.filter(key => key !== 'email');
+      sql = `UPDATE user_data SET ${key_filter.map((key) => `${key} = ?`).join(', ')}, is_deleted = FALSE WHERE email = ?`;
 
-    let token: string;
-    do {
-        token = gentoken(id_last);
-    } while (await checkdata('token', token)); //เช็ค id และ token
-    console.log(`Token: ${token}`);
+      values = key_filter.map(key => userDataToInsert[key]);
+      values.push(email);
+    }
 
-    await db.execute('UPDATE user_data SET token = ? WHERE id_acc = ?', [token, id_last]);
-    //ยัดลง token sql
-    await db.execute('INSERT INTO user_phone (id_acc, phone) VALUES (?, ?)', [id_last,phone]);
+    const con_db = await db.getConnection(); 
+    try{
+      await con_db.beginTransaction();
+      
+      const [insertResult] = await con_db.execute<ResultSetHeader>(sql, values);
+      //ดึง id ล่าสุดที่เพิ่มลงไป [result] บังคับดึง array index 0 มาเก็บ result
+      // ดูว่าควรใช้ id ล่าสุด หรือ id ที่เก่า (เช็คผ฿้ใช้อะแหละ)
+      const id_last = come_back ? row_email[0].id_acc : insertResult.insertId;
 
-   res.status(201).json({
-      message: 'Signin successful',
-      id_acc: id_last,
-      username,
-      email,
-      name,
-      last,
-      birthdate,      //กันแสดง null , undefined เพราะไม่ได้ส่งมา set
-      Role: Role !== undefined && Role !== null ? Role:'user', 
-      available: available !== undefined && available !== null? available : true,
-      phone,
-      token
-  });
-    console.log(`User ${userDataToInsert.email} signed in successfully`);
+      if(id_last === 0 || id_last === undefined)  {
+        console.log('Failed to insert user data : Rollback');
+        await con_db.rollback();
+        con_db.release();
+        return res.status(400).json({ error: 'Failed to insert user data' });
+      }
+
+      let token: string;
+      let exist : any[]
+      do {
+          token = gentoken(id_last);
+          //ไม่ได้เอา con_db ไป select เอา connection ที่ว่างอยู่ไป select จะได้ไวๆ
+          [exist] = await db.execute<any[]>(`SELECT 1 FROM user_data WHERE token = ?`, [token]);
+      } while (exist.length > 0); //เช็ค id และ token
+      console.log(`Token: ${token}`);
+
+
+      const [token_insert] = await con_db.execute<ResultSetHeader>('UPDATE user_data SET token = ? WHERE id_acc = ?', [token, id_last]);
+      const [phone_insert] = await con_db.execute<ResultSetHeader>('INSERT INTO user_phone (id_acc, phone) VALUES (?, ?)', [id_last,phone]);
+
+      if(phone_insert.affectedRows === 0 || token_insert.affectedRows === 0){
+        console.log('Failed to insert phone or token : Rollback');
+        await con_db.rollback();
+        con_db.release();
+        return res.status(400).json({ error: 'Failed to insert phone' });
+      }
+      await con_db.commit();
+      con_db.release();
+
+      res.status(201).json({
+          message: 'Signin successful',
+          id_acc: id_last,
+          username,
+          email,
+          name,
+          last,
+          birthdate,      //กันแสดง null , undefined เพราะไม่ได้ส่งมา set
+          Role: Role !== undefined && Role !== null ? Role:'user', 
+          available: available !== undefined && available !== null? available : true,
+          phone,
+          token
+      });
+
+      console.log(`User ${userDataToInsert.email} signed in successfully`);
+    }catch (error) {
+      await con_db.rollback();
+      con_db.release();
+      console.error(error);
+      throw error;
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-//เช็คข้อมูลใน sqlว่ามีข้อมูลทีไหม
-export const checkdata = async function checkdata(attribute: string,data: string | number){//use select 1 ruturn 1 if have data
-  if(attribute == "phone"){  
-    const [row] = await db.execute(`SELECT 1 FROM user_phone WHERE ${attribute} = ?`, [data]);
-    return (row as any[]).length > 0
-  }
-  const [row] = await db.execute(`SELECT 1 FROM user_data WHERE ${attribute} = ?`, [data]);
-  return (row as any[]).length > 0; //return true if data exists
-}
 
 function gentoken(id: number) {  
     const token = jwt.sign(
@@ -135,3 +173,12 @@ function gentoken(id: number) {
     );
     return token;
 }
+//เช็คข้อมูลใน sqlว่ามีข้อมูลทีไหม
+// export const checkdata = async function checkdata(attribute: string,data: string | number){//use select 1 ruturn 1 if have data
+//   if(attribute == "phone"){  
+//     const [row] = await db.execute(`SELECT 1 FROM user_phone WHERE ${attribute} = ?`, [data]);
+//     return (row as any[]).length > 0
+//   }
+//   const [row] = await db.execute(`SELECT 1 FROM user_data WHERE ${attribute} = ?`, [data]);
+//   return (row as any[]).length > 0; //return true if data exists
+// }

@@ -2,6 +2,7 @@ import { Router ,Request, Response} from 'express';
 import { post_config } from '../method/config_contral/post_config/post_config';
 import { get_config } from '../method/config_contral/get_config/get_config';
 import {  patch_config } from '../method/config_contral/patch_config/patch_config';
+import { delete_config } from '../method/config_contral/delete_config/delete_config';
 
 const router = Router();
 
@@ -10,6 +11,8 @@ router.post('/post_config/newConfig', post_config); //body
 router.get('/get_config', get_config); //query
 
 router.patch('/patch_config/:token/:id', patch_config); //id_acc
+
+router.delete('/delete_config/:id', delete_config);
 
 export default router;
 
