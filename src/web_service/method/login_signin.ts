@@ -21,12 +21,18 @@ import { ResultSetHeader } from 'mysql2';
       return res.status(400).json({ error: 'Invalid password' });
     }
     //สร้าง token ใหม่
+    let token: string = (rows as any[])[0].token;
     try {
         jwt.verify((rows as any[])[0].token, process.env.JWT_SECRET!);
     }catch (error) {
-        const token = gentoken((rows as any[])[0].id);
-        await db.execute('UPDATE user_data SET token = ? WHERE email = ?', [token, email]);
-        console.log('Token expired, new token generated');
+      console.log('Token expired, new token generated');
+      let exist : any[];
+      do {
+        token = gentoken((rows as any[])[0].id_acc);
+          //ไม่ได้เอา con_db ไป select เอา connection ที่ว่างอยู่ไป select จะได้ไวๆ
+        [exist] = await db.execute<any[]>(`SELECT 1 FROM user_data WHERE token = ?`, [token]);
+      } while (exist.length > 0); //เช็ค id และ token 
+      await db.execute('UPDATE user_data SET token = ? WHERE id_acc = ?', [token, (rows as any[])[0].id_acc]);
     }
     //console.log(rows[0]);
     res.status(200).json({
@@ -39,7 +45,7 @@ import { ResultSetHeader } from 'mysql2';
         birthdate: rows[0].birthdate,
         Role: rows[0].Role,
         available: rows[0].available,
-        token: rows[0].token
+        token: token
     });
     console.log(`User ${email} logged in successfully`);
   } catch (error) {
@@ -166,7 +172,7 @@ export const signin = async (req: Request, res: Response) => {
 };
 
 function gentoken(id: number) {  
-    const token = jwt.sign(
+    const token =  jwt.sign(
         { userId: id },
         process.env.JWT_SECRET!,
         { expiresIn: '1d' } // หมดอายุใน 1 ชั่วโมง

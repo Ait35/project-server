@@ -11,8 +11,8 @@ export const patch_user = async (req: Request, res: Response) => {
             data: Record<string, string | number | boolean>; 
         }
         const { token, id, data } = req.body as unknown as user_req;
-        const canEdit: string[] = ['username','name', 'last', 'birthdate', 'available', 'phone'];
-        const canEditAdmin: string[] = ['email',"password",'Role' ,...canEdit];
+        const canEdit: string[] = ['username','password' ,'name', 'last', 'birthdate', 'available', 'phone'];
+        const canEditAdmin: string[] = ['email','Role' ,...canEdit];
 
         try{
             jwt.verify(token as string, process.env.JWT_SECRET!);
@@ -30,10 +30,15 @@ export const patch_user = async (req: Request, res: Response) => {
             console.log(`Error in patch_user Role : ${Role}`);
             return res.status(400).send('Bad Request');
         }
-
-        if ((Role[0].Role === 'user' || Role[0].Role === 'technician') && Role[0].id_acc !== Number(id)) {
+        console.log(`User taga: ${Number(id)}, User ID: ${Role[0].id_acc} Role: ${Role[0].Role}`);
+        if ((Role[0].Role === 'user' || Role[0].Role === 'technician') && (Role[0].id_acc !== Number(id) ||(data.email || data.Role))) {
+            console.log(`Forbidden : User can only edit their own profile and cannot edit email or role`);
             return res.status(403).json({ error: 'Forbidden : You can only edit your own profile' });
         }
+        // if((Role[0].Role === 'user' || Role[0].Role === 'technician') && ){
+        //     return res.status(403).json({ error: 'Forbidden : You cannot edit email, password or role' });
+        // }
+        
         const keys: string[] = Role[0].Role === 'admin' || Role[0].Role === 'dev' ? canEditAdmin : canEdit;
         // เช็คว่า data ที่ส่งมามี key ที่อยู่ใน keys หรือไม่ ถ้สไม่จะดป็นว่าง
         let keys_data = Object.keys(data).filter(key => keys.includes(key));
@@ -48,23 +53,24 @@ export const patch_user = async (req: Request, res: Response) => {
         if(keys_data.includes('password')){
             data['password'] = await bcrypt.hash(data['password'] as string, 10);
         }
-
+        
         const userTableKeys = keys_data.filter((k) => k !== 'phone');
         // กันส่งแค่ phone เพราะจะโดน userTableKeys เอาออก แต่มันมีค่าไง
         if (userTableKeys.length > 0) {
             const selectFields = userTableKeys.map(key => `${key} = ?`).join(', ');
             const values = userTableKeys.map(key => data[key]);
             const sql: string =`UPDATE user_data SET ${selectFields} WHERE id_acc = ?`; 
-            await db.execute(sql, [...values, id] as any[]);
+            await db.execute<any[]>(sql, [...values, id] as any[]);
         }
              
         if(keys_data.includes('phone')){
             
             const sql_phone: string = `UPDATE user_phone SET phone = ? WHERE id_acc = ?`;
-            (await db.execute(sql_phone, [data.phone, id]  as any[]));
+            await db.execute<any[]>(sql_phone, [data.phone, id]  as any[]);
         }
         
-        res.status(200).json({ message: 'User updated successfully' });
+        res.status(200).json({ message: 'User updated successfully', ... keys_data.map(key => {
+             return key !== 'password' ? { [key]: data[key] } : { [key]: '********' }}) });
 
     }catch(error : any){
 
