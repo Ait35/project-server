@@ -31,9 +31,16 @@ export const patch_user = async (req: Request, res: Response) => {
             return res.status(400).send('Bad Request');
         }
         console.log(`User taga: ${Number(id)}, User ID: ${Role[0].id_acc} Role: ${Role[0].Role}`);
-        if ((Role[0].Role === 'user' || Role[0].Role === 'technician') && (Role[0].id_acc !== Number(id) ||(data.email || data.Role))) {
-            console.log(`Forbidden : User can only edit their own profile and cannot edit email or role`);
-            return res.status(403).json({ error: 'Forbidden : You can only edit your own profile' });
+        
+        if (Role[0].Role === 'user' || Role[0].Role === 'technician') {
+            if (Role[0].id_acc !== Number(id)) {
+                console.log(`Forbidden : User can only edit their own profile`);
+                return res.status(403).json({ error: 'Forbidden : You can only edit your own profile' });
+            }
+            if(data.email !== undefined || data.Role !== undefined){
+                console.log(`Forbidden : User cannot edit email or role`);
+                return res.status(403).json({ error: 'Forbidden : You can only edit your own profile' });
+            }
         }
         // if((Role[0].Role === 'user' || Role[0].Role === 'technician') && ){
         //     return res.status(403).json({ error: 'Forbidden : You cannot edit email, password or role' });

@@ -13,6 +13,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql           # Persistent storage
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - ./init_db:/docker-entrypoint-initdb.d
   adminer:
     image: adminer
     container_name: project_adminer

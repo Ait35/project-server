@@ -40,7 +40,14 @@ export const post_log = async(req: Request, res: Response) => {
             console.log(userPermission.Role)
             return res.status(403).json({ error: 'Forbidden : You do not have permission to add poles_log' });
         }
+        const [isBroken]: any[] = await db.execute(`SELECT status FROM pole WHERE id_pole = ?`, [data.id_pole as number]);
 
+        if (isBroken.length === 0) {
+            return res.status(404).json({ error: 'Not Found : Pole not found' });
+        }
+        if(isBroken[0].status === false || isBroken[0].status === 0){
+            return res.status(409).json({ error: 'Conflict : Pole is broken' });
+        }
         const values = keys.map(k => data[k]); // เอาค่าที่อยู่ใน keys มาใส่ใน values
         const select = keys.join(', ');
         const sql = `INSERT INTO ${table} (${select}) VALUES (${keys.map(() => '?').join(', ')});`;
